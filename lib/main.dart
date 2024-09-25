@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'package:address_app/page_kabupaten.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -25,14 +26,22 @@ class Province {
 
 //? Step 2: Fetch provinces from API
 Future<List<Province>> fetchProvinces() async {
-  final response = await http.get(
-      Uri.parse('https://emsifa.github.io/api-wilayah-indonesia/api/provinces.json'));
+  try {
+    final response = await http
+        .get(Uri.parse(
+            'https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json'))
+        .timeout(const Duration(seconds: 10)); // Timeout in 10 seconds
 
-  if (response.statusCode == 200) {
-    List<dynamic> jsonList = json.decode(response.body);
-    return jsonList.map((json) => Province.fromJson(json)).toList();
-  } else {
-    throw Exception('Failed to load provinces: ${response.statusCode}');
+    if (response.statusCode == 200) {
+      List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((json) => Province.fromJson(json)).toList();
+    } else {
+      print('Failed to load provinces. Status code: ${response.statusCode}');
+      throw Exception('Failed to load province');
+    }
+  } catch (error) {
+    print("Error: $error");
+    throw Exception('Failed to load provinces');
   }
 }
 
@@ -86,13 +95,6 @@ class ProvinceListPageState extends State<ProvinceListPage> {
       ),
       body: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Check the console for the .then() demo output',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
           Expanded(
             child: FutureBuilder<List<Province>>(
               future: _provincesFuture,
@@ -105,9 +107,22 @@ class ProvinceListPageState extends State<ProvinceListPage> {
                   return ListView.builder(
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(snapshot.data![index].name),
-                        subtitle: Text('ID: ${snapshot.data![index].id}'),
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => KabupatenListPage(
+                                provinceId: snapshot.data![index].id,
+                                provinceName: snapshot.data![index].name,
+                              ),
+                            ),
+                          );
+                        },
+                        child: ListTile(
+                          title: Text(snapshot.data![index].name),
+                          subtitle: Text('ID: ${snapshot.data![index].id}'),
+                        ),
                       );
                     },
                   );
